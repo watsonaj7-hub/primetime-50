@@ -1,0 +1,68 @@
+insert into public.food_items (name, calories, protein_g, carbs_g, fat_g, tags) values
+('Greek yogurt with berries', 310, 32, 28, 8, array['high-protein','mediterranean','gluten-free']),
+('Salmon lentil bowl', 540, 42, 46, 20, array['high-protein','mediterranean','gluten-free']),
+('Tofu vegetable stir fry', 460, 31, 42, 18, array['vegetarian','high-protein','dairy-free']),
+('Turkey chili', 490, 44, 38, 16, array['high-protein','gluten-free']),
+('Egg spinach breakfast plate', 380, 29, 18, 22, array['low-carb','high-protein','gluten-free']);
+
+insert into public.exercises (
+  exercise_name, category, primary_muscles, secondary_muscles, equipment, difficulty,
+  joint_impact_level, contraindications, setup_instructions, execution_cues, common_mistakes,
+  regression, progression, video_url, image_url
+) values
+('Sit-to-Stand','strength',array['quads','glutes'],array['core'],array['chair'],'beginner','low','Acute knee pain','Sit tall on a stable chair with feet under knees.','Press through the full foot and stand tall.','Dropping quickly to the chair.','Use a higher chair.','Goblet box squat',null,null),
+('Wall Push-Up','strength',array['chest','triceps'],array['shoulders'],array['wall'],'beginner','low','Sharp shoulder pain','Stand arm length from a wall.','Keep ribs down and elbows soft.','Shrugging shoulders toward ears.','Stand closer to wall.','Incline push-up',null,null),
+('Band Row','strength',array['upper back'],array['biceps'],array['resistance band'],'beginner','low','Sharp shoulder pain','Anchor band at chest height.','Pull elbows toward back pockets.','Leaning back instead of rowing.','Use lighter band.','Seated row machine',null,null),
+('Goblet Box Squat','strength',array['quads','glutes'],array['core'],array['dumbbell','box'],'intermediate','moderate','Painful knee flexion','Hold dumbbell at chest and stand in front of box.','Touch box lightly then stand.','Collapsing knees inward.','Sit-to-stand.','Goblet squat',null,null),
+('Dumbbell Romanian Deadlift','strength',array['hamstrings','glutes'],array['back'],array['dumbbells'],'intermediate','low','Back pain with hinging','Hold dumbbells in front of thighs.','Push hips back with a long spine.','Rounding the lower back.','Supported hip hinge.','Single-leg RDL with support',null,null),
+('Farmer Carry','strength',array['core','grip'],array['traps'],array['dumbbells'],'beginner','low','Grip injury','Hold weights by sides.','Walk tall with quiet shoulders.','Leaning to one side.','Use one light weight.','Heavier carry',null,null),
+('Dead Bug','core',array['core'],array['hip flexors'],array['mat'],'beginner','low','Pain lying flat','Lie on back with knees bent.','Exhale as the heel lowers.','Arching the low back.','Bent-knee taps.','Long-lever dead bug',null,null),
+('Bird Dog','core',array['core','glutes'],array['shoulders'],array['mat'],'beginner','low','Wrist pain','Start on hands and knees.','Reach long without twisting.','Rotating hips open.','Hands elevated.','Pause reps',null,null),
+('Tandem Stand','balance',array['ankles','hips'],array['core'],array['none'],'beginner','low','High fall risk','Stand near a stable support.','Keep eyes forward and breathe.','Holding breath.','Wider stance.','Tandem walk',null,null),
+('Brisk Walk','cardio',array['heart','legs'],array['calves'],array['none'],'beginner','low','Chest pain or dizziness','Choose a flat safe route.','Walk at talk-test pace.','Starting too fast.','Short intervals.','Hill intervals',null,null);
+
+insert into public.exercises (
+  exercise_name, category, primary_muscles, secondary_muscles, equipment, difficulty,
+  joint_impact_level, contraindications, setup_instructions, execution_cues, common_mistakes,
+  regression, progression, video_url, image_url
+) values
+('Step-Up','strength',array['quads','glutes'],array['calves'],array['step'],'beginner','moderate','Unstable balance','Use a low step near support.','Drive through the whole foot.','Pushing off the back foot.','Lower step.','Loaded step-up',null,null),
+('Heel Raise','balance',array['calves'],array['ankles'],array['chair'],'beginner','low','Achilles flare','Stand behind a chair.','Rise smoothly and lower slowly.','Rocking forward.','Two-hand support.','Single-leg heel raise',null,null),
+('Incline Push-Up','strength',array['chest','triceps'],array['shoulders'],array['bench'],'beginner','low','Shoulder pain','Place hands on a stable bench.','Move as one line.','Letting hips sag.','Wall push-up.','Lower incline',null,null),
+('Machine Chest Press','strength',array['chest'],array['triceps'],array['machine'],'beginner','low','Shoulder impingement','Set handles near mid-chest.','Stop before shoulders roll forward.','Wall push-up.','Heavier sets',null,null),
+('Lat Pulldown','strength',array['lats','upper back'],array['biceps'],array['machine'],'beginner','low','Shoulder pain overhead','Grip bar slightly wider than shoulders.','Pull to upper chest.','Leaning back heavily.','Band row.','Assisted pull-up',null,null),
+('Leg Press','strength',array['quads','glutes'],array['hamstrings'],array['machine'],'beginner','moderate','Knee pain deep flexion','Place feet shoulder-width on platform.','Control depth and avoid locking knees.','Dropping too deep.','Box squat.','Single-leg leg press',null,null),
+('Seated Hamstring Curl','strength',array['hamstrings'],array['calves'],array['machine'],'beginner','low','Hamstring strain','Adjust pad above heels.','Pause gently at the bottom.','Using momentum.','Glute bridge.','Heavier curl',null,null),
+('Glute Bridge','strength',array['glutes'],array['hamstrings'],array['mat'],'beginner','low','Pain lying flat','Lie on back with knees bent.','Lift hips without arching ribs.','Overextending low back.','Pillow support.','Loaded bridge',null,null),
+('Seated Dumbbell Press','strength',array['shoulders'],array['triceps'],array['dumbbells'],'intermediate','moderate','Shoulder pain overhead','Sit tall with weights at shoulders.','Press in a pain-free arc.','Flaring ribs.','Landmine press.','Standing press',null,null),
+('Band Pull-Apart','mobility',array['upper back'],array['shoulders'],array['band'],'beginner','low','Shoulder pain','Hold band at chest height.','Open chest and keep neck relaxed.','Shrugging.','Shorter range.','Stronger band',null,null),
+('Cat-Cow','mobility',array['spine'],array['core'],array['mat'],'beginner','low','Wrist pain','Start on hands and knees.','Move slowly with breath.','Forcing end range.','Forearms elevated.','Thread the needle',null,null),
+('Open Book Rotation','mobility',array['thoracic spine'],array['shoulders'],array['mat'],'beginner','low','Shoulder pain','Lie on side with knees bent.','Rotate upper back, not lower back.','Twisting aggressively.','Smaller range.','Longer hold',null,null),
+('Hip Flexor Stretch','mobility',array['hips'],array['quads'],array['mat'],'beginner','low','Knee pressure','Set one knee down with padding.','Tuck pelvis gently.','Arching low back.','Standing stretch.','Rear-foot elevated stretch',null,null),
+('Calf Stretch','mobility',array['calves'],array['ankles'],array['wall'],'beginner','low','Achilles flare','Place hands on wall.','Keep heel heavy.','Bouncing.','Bent-knee version.','Loaded calf mobility',null,null),
+('Recumbent Bike','cardio',array['heart','legs'],array['glutes'],array['bike'],'beginner','low','Pain with pedaling','Adjust seat for soft knee bend.','Smooth cadence and relaxed grip.','Too much resistance.','Lower resistance.','Tempo intervals',null,null),
+('Pool Walk','cardio',array['heart','legs'],array['core'],array['pool'],'beginner','low','Unsafe pool access','Stand in waist-deep water.','Stride tall through water.','Dragging feet.','Short duration.','Aqua intervals',null,null),
+('Resistance Band Squat','strength',array['quads','glutes'],array['core'],array['band'],'beginner','low','Knee pain','Stand on band with handles at shoulders.','Keep knees tracking toes.','Knees collapsing inward.','Sit-to-stand.','Goblet squat',null,null),
+('Band Chest Press','strength',array['chest'],array['triceps'],array['band'],'beginner','low','Shoulder pain','Anchor band behind chest.','Press slightly below shoulder height.','Overarching back.','Wall push-up.','Heavier band',null,null),
+('Pallof Press','core',array['core'],array['shoulders'],array['band'],'beginner','low','Abdominal strain','Stand side-on to band anchor.','Resist rotation and breathe.','Twisting toward anchor.','Closer anchor.','Longer lever',null,null),
+('Supported Split Squat','strength',array['quads','glutes'],array['core'],array['chair'],'intermediate','moderate','Knee pain','Hold stable support in split stance.','Move straight down with support.','Front knee caving.','Step-up.','Loaded split squat',null,null),
+('Cable Face Pull','strength',array['upper back'],array['shoulders'],array['cable'],'beginner','low','Shoulder pain','Set cable near face height.','Pull toward nose with elbows high.','Arching low back.','Band pull-apart.','Heavier cable',null,null),
+('Side-Lying Clamshell','strength',array['glutes'],array['hips'],array['mini band'],'beginner','low','Hip pain','Lie on side with knees bent.','Keep pelvis still.','Rolling hips back.','No band.','Lateral band walk',null,null),
+('Lateral Band Walk','strength',array['glutes'],array['hips'],array['mini band'],'beginner','low','Hip or knee pain','Place band above knees.','Small steps with toes forward.','Dragging trail foot.','Clamshell.','Lower band position',null,null),
+('Seated Row Machine','strength',array['upper back'],array['biceps'],array['machine'],'beginner','low','Shoulder pain','Sit tall with chest supported if available.','Lead with elbows and pause tall.','Yanking the handle.','Band row.','Heavier row',null,null),
+('Assisted Lunge','strength',array['quads','glutes'],array['calves'],array['rail'],'intermediate','moderate','Knee pain','Hold rail and step back.','Use rail and shorten range.','Dropping too low.','Supported split squat.','Reverse lunge',null,null),
+('Seated March','cardio',array['hips','heart'],array['core'],array['chair'],'beginner','low','Hip pain','Sit tall on chair edge.','Alternate knees with control.','Slumping.','Slower pace.','Standing march',null,null),
+('Standing March','cardio',array['hips','heart'],array['core'],array['chair'],'beginner','low','Balance risk','Stand near chair.','Use light fingertip support.','Leaning on support.','Seated march.','High-knee intervals',null,null),
+('Single-Arm Cable Press','strength',array['chest','core'],array['triceps'],array['cable'],'intermediate','low','Shoulder pain','Stand split stance facing away from cable.','Press without torso rotation.','Twisting.','Band press.','Split stance press',null,null),
+('Landmine Press','strength',array['shoulders'],array['triceps'],array['barbell'],'intermediate','low','Shoulder pain','Set bar in landmine or corner.','Press forward and up.','Shrugging.','Incline press.','Two-arm landmine press',null,null),
+('Box Squat','strength',array['quads','glutes'],array['core'],array['box'],'beginner','low','Knee pain','Stand in front of box.','Touch box lightly and stand.','Sitting fully relaxed.','Sit-to-stand.','Goblet box squat',null,null),
+('Cable Wood Chop','core',array['core'],array['hips'],array['cable'],'intermediate','moderate','Back pain twisting','Set cable high or low.','Rotate through upper back and hips.','Forcing low-back twist.','Pallof press.','Higher load',null,null),
+('Sled Push','strength',array['legs','heart'],array['core'],array['sled'],'intermediate','low','Chest pain or dizziness','Set light sled load.','Short pushes with steady breathing.','Holding breath.','Incline treadmill walk.','Longer pushes',null,null),
+('Incline Treadmill Walk','cardio',array['heart','legs'],array['calves'],array['treadmill'],'beginner','low','Balance risk','Start flat before adding incline.','Use rails only as needed.','Hanging from rails.','Flat walk.','Higher incline',null,null),
+('Seated Calf Raise','strength',array['calves'],array['ankles'],array['machine'],'beginner','low','Achilles flare','Set pad above knees.','Pause at top and bottom.','Bouncing.','Heel raise.','Heavier raise',null,null),
+('Dumbbell Floor Press','strength',array['chest'],array['triceps'],array['dumbbells'],'beginner','low','Shoulder pain','Lie on floor with knees bent.','Upper arms stop on floor.','Bouncing elbows.','Band press.','Bench press',null,null),
+('Supported Dumbbell Row','strength',array['upper back'],array['biceps'],array['dumbbell'],'beginner','low','Back pain unsupported','Brace one hand on bench.','Row smoothly toward ribs.','Twisting torso.','Band row.','Heavier row',null,null),
+('Chair Yoga Flow','mobility',array['whole body'],array['spine'],array['chair'],'beginner','low','Pain with positions','Sit tall on stable chair.','Move within comfortable range.','Forcing stretch.','Shorter flow.','Standing flow',null,null),
+('Balance Reach','balance',array['ankles','hips'],array['core'],array['chair'],'beginner','low','High fall risk','Stand near support.','Reach slowly while supported.','Reaching too far.','Tandem stand.','Single-leg reach',null,null),
+('Cooldown Breathing','recovery',array['nervous system'],array['diaphragm'],array['mat'],'beginner','low','Dizziness lying down','Lie or sit comfortably.','Use a long relaxed exhale.','Forcing deep breaths.','Seated breathing.','Longer breath sets',null,null),
+('Supported Hip Hinge','strength',array['hamstrings','glutes'],array['back'],array['counter'],'beginner','low','Severe low-back pain','Hold counter lightly.','Push hips back with long spine.','Rounding back.','Reduce range.','Dumbbell Romanian deadlift',null,null);
