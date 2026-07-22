@@ -1,6 +1,6 @@
 # PrimeFit 50+
 
-Production-ready Next.js and TypeScript MVP for adults 50+ who want safer strength, fat loss, mobility, nutrition, and AI coaching.
+Production-ready Next.js and TypeScript MVP for adults 50+ who want safer strength, fat loss, mobility, nutrition, and AI coaching!
 
 ## Run Locally
 
