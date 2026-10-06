@@ -10,6 +10,9 @@ import {
   Utensils
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
+import { supabaseConfig } from "@/lib/config/public";
+import { UserMenu } from "@/components/auth/user-menu";
 
 const nav = [
   { href: "/", label: "Home", icon: Home },
@@ -19,7 +22,12 @@ const nav = [
   { href: "/coach", label: "Coach", icon: Bot }
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  let authenticated = false;
+  if (supabaseConfig()) {
+    try { const client = await createClient(); authenticated = !!(await client.auth.getUser()).data.user; }
+    catch { /* Public pages remain available; protected services fail closed. */ }
+  }
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
       <header className="sticky top-0 z-20 border-b bg-background/92 backdrop-blur">
@@ -52,9 +60,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             </Button>
           </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/settings" className="text-sm font-semibold lg:hidden">Settings</Link>
+            {authenticated ? <UserMenu /> : <Button asChild variant="outline"><Link href="/login">Sign in</Link></Button>}
+          </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8"><p className="mb-5 rounded-[8px] border bg-secondary p-3 text-sm">Workout, nutrition, progress and coach panels contain sample content. Tracking and coaching are not connected yet.</p>{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
         <div className="grid grid-cols-5">
           {nav.map((item) => (

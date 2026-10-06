@@ -1,3 +1,5 @@
+-- HISTORICAL BASELINE ONLY. Use all versioned migrations for the current secure schema.
+-- Do not run this file alone; see ../../docs/development.md.
 create extension if not exists "pgcrypto";
 
 create type user_role as enum ('user', 'admin');

@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Dumbbell, RotateCcw } from "lucide-react";
+import { CheckCircle2, Clock, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 

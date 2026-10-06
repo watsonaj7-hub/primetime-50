@@ -1,0 +1,10 @@
+**/node_modules/
+**/.next/
+**/tsconfig.tsbuildinfo
+**/.env*
+!**/.env.example
+**/supabase/.temp/
+**/supabase/.branches/
+**/test-results/
+**/playwright-report/
+**/coverage/

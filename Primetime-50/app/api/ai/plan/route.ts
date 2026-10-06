@@ -1,3 +1,6 @@
+import "server-only";
+import { requireUser } from "@/lib/auth/require-user";
+import { AppError, checkOrigin, errorResponse, readJson } from "@/lib/http/errors";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -35,13 +38,17 @@ const fallbackPlan = {
 };
 
 export async function POST(request: Request) {
-  const body = requestSchema.parse(await request.json());
+  try {
+  checkOrigin(request);
+  await requireUser();
+  const body = requestSchema.parse(await readJson(request));
 
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(fallbackPlan);
+  const apiKey = process.env.PRIMEFIT_AI_KEY || process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ ...fallbackPlan, demo: true });
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = new OpenAI({ apiKey });
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     response_format: { type: "json_object" },
@@ -60,5 +67,7 @@ export async function POST(request: Request) {
   });
 
   const content = completion.choices[0]?.message.content ?? JSON.stringify(fallbackPlan);
-  return NextResponse.json(JSON.parse(content));
+  try { return NextResponse.json(JSON.parse(content)); }
+  catch { throw new AppError(502, "The coach response could not be processed. Please try again."); }
+  } catch (error) { return errorResponse(error); }
 }

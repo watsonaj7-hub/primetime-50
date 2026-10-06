@@ -1,25 +1,13 @@
 # PrimeFit 50+
 
-Production-ready Next.js and TypeScript MVP for adults 50+ who want safer strength, fat loss, mobility, nutrition, and AI coaching.
+The Next.js application is in **`Primetime-50/`**. Repository-root TSX files are legacy copies and are not the runnable app.
 
-## Run Locally
-
-```bash
-npm install
-npm run dev
+```sh
+cd Primetime-50
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Copy `.env.example` to `.env.local` and add Supabase, OpenAI, and Stripe keys.
+Account features require configured Supabase Auth/PostgreSQL and the versioned migrations. See [development setup](docs/development.md), [Phase 1 implementation and validation status](docs/phase-1-implementation.md), and [requirements](docs/requirements.md).
 
-## Supabase
-
-Run the SQL in `supabase/schema.sql`, then seed starter exercises with `supabase/seed.sql`.
-
-## Included
-
-- Mobile-first Next.js app router screens
-- Supabase auth helpers, protected route middleware, SQL schema, RLS policies, indexes, and seed data
-- AI coaching route with structured JSON response guardrails
-- Stripe checkout and webhook routes
-- shadcn-style UI primitives
-- Workout, nutrition, progress, habits, subscription, settings, and admin surfaces
+The existing UI is preserved. Workout, nutrition, progress and coaching panels still show labelled sample content. Phase 1 code adds auth, onboarding/profile/settings persistence, validation and ownership controls; the full database gate must pass before Phase 2.

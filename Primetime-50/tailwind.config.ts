@@ -42,7 +42,7 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "ui-sans-serif", "system-ui"]
+        sans: ["Inter", "ui-sans-serif", "system-ui"]
       },
       boxShadow: {
         soft: "0 12px 35px rgb(25 44 38 / 0.10)"
