@@ -1,5 +1,6 @@
 // TEST DATA ONLY. Production views/controllers; synthetic identity and disposable
 // in-memory transport. Never mount in an application route or contact a backend.
+import { Button } from "@/components/ui/button";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ProfileForm } from "@/components/onboarding/profile-form";
 import { WorkoutView } from "@/components/workout/workout-experience";
@@ -90,17 +91,20 @@ export function PilotFlowFixture() {
     const original = window.fetch; window.fetch = fixture.transport; setReady(true);
     return () => { window.fetch = original; workout.dispose(); history.dispose(); };
   },[fixture,workout,history]);
-  function navigate(next: Screen, id?: string) {
+  function navigate(next: Screen, id?: string, catalogue?: string) {
     setScreen(next); setMount(n => n+1);
-    if (next === "workout") { workout.activate(); void workout.load(id); }
+    if (next === "workout") { workout.activate(); void workout.load(id,undefined,catalogue); }
     if (next === "history") { history.activate(); void history.load(id); }
   }
   const values = Object.fromEntries(Object.entries(validProfile).filter(([,v]) => !Array.isArray(v)).map(([k,v]) => [k,v === null ? "" : String(v)]));
   const startingDraft: OnboardingDraft = { ...partialDraft, step: 0, values: { ...partialDraft.values,...values, display_name: "TEST DATA ONLY member" }, equipment: validProfile.equipment, healthRestrictions: [] };
-  return <main className="mx-auto min-w-0 max-w-7xl space-y-6 px-4 py-5 [overflow-wrap:anywhere]" onClick={event => {
+  return <main className="mx-auto min-w-0 max-w-7xl space-y-6 px-4 py-5 [overflow-wrap:anywhere]" onClickCapture={event => {
     const a = (event.target as HTMLElement).closest("a"); if (!a) return;
-    const url = new URL(a.href); const next = ({ "/settings": "settings", "/workout": "workout", "/progress": "history", "/onboarding": "onboarding" } as const)[url.pathname as "/settings"];
-    event.preventDefault(); if (next) navigate(next,url.searchParams.get("id") ?? undefined); else setNotice("TEST DATA ONLY: destination requires the real application; no external navigation.");
+    event.preventDefault(); event.stopPropagation();
+    const url = new URL(a.href);
+    if (url.origin !== event.currentTarget.ownerDocument.location.origin) { setNotice("TEST DATA ONLY: external navigation is unavailable."); return; }
+    const next = ({ "/settings": "settings", "/workout": "workout", "/progress": "history", "/onboarding": "onboarding" } as const)[url.pathname as "/settings"];
+    if (next) navigate(next,url.searchParams.get("id") ?? undefined,url.searchParams.get("catalogue") ?? undefined); else setNotice("TEST DATA ONLY: destination requires the real application; no external navigation.");
   }}>
     <h1 className="text-2xl font-bold">TEST DATA ONLY pilot workflow fixture</h1>
     <p>Production components and controllers. Synthetic identity, fictional review and in-memory transport only. Reload discards all data. No connected database, professional approval or pilot consent.</p>
@@ -115,4 +119,79 @@ export function PilotFlowFixture() {
     <p role="status">{notice}</p>
     {ready && (screen === "onboarding" ? <ProfileForm key={mount} profile={null} draft={fixture.draft() ?? startingDraft} onboarding /> : screen === "settings" ? fixture.profile() ? <ProfileForm key={mount} profile={fixture.profile()} /> : <p>Complete onboarding first. No synthetic saved profile yet.</p> : screen === "workout" ? <WorkoutView state={ws} controller={workout} /> : <HistoryView state={hs} retry={() => void history.load()} />)}
   </main>;
+}
+
+// Same production consumer/logger/history, synthetic transport only. Parent may
+// mount this export in a disposable official-Chrome fixture, never production.
+import { GeneratedController } from "@/lib/client/generated-workout";
+import { GeneratedView } from "@/components/workout/generated-experience";
+import { savedGenerated, noProgression } from "./generated-consumer";
+export function generatedFlowFixture() {
+  const base=pilotFixture();
+  let plans=[savedGenerated()], revoked=false, fail=false, delayed=false;
+  let release:(()=>void)|undefined;
+  const transport:typeof fetch=async(input,init)=>{
+    const url=new URL(String(input),"http://localhost");
+    if(url.origin!=="http://localhost")throw new Error("TEST DATA ONLY refuses external transport");
+    if(url.pathname==="/api/ai/plan"){
+      if(!(await base.verify()))return new Response("{}",{status:401});
+      if(delayed){delayed=false;await new Promise<void>(r=>{release=r;});release=undefined;}
+      if(fail){fail=false;return new Response("{}",{status:503});}
+      if(init?.method==="POST"){
+        const raw=savedGenerated();raw.request_id=JSON.parse(String(init.body)).request_id;plans=[raw];
+        return new Response(JSON.stringify({plan:raw}));
+      }
+      const history=await (await base.transport("/api/workouts?view=history")).json();
+      const {availability}=await (await transport("/api/workouts?view=reviewed-availability")).json();
+      const missing_prerequisites=["approved_progression_rules","approved_recovery_rules"];
+      if(!history.workouts.length)missing_prerequisites.push("completed_records");
+      if(availability.state!=="available")missing_prerequisites.push("screening_review");
+      const progression={...noProgression,missing_prerequisites,screening_state:availability.state,evidence_state:history.workouts.length?"available":"none",evidence:history.workouts.map((w:ReturnType<typeof testRecord>)=>({id:w.id,performed_at:w.performed_at,catalogue_version_id:w.catalogue_version_id}))};
+      return new Response(JSON.stringify({plans:url.searchParams.has("request_id")?plans.filter(p=>p.request_id===url.searchParams.get("request_id")):plans,progression}));
+    }
+    if(revoked && url.pathname==="/api/workouts" && url.searchParams.get("view")==="reviewed-availability")return new Response(JSON.stringify({availability:{state:"unavailable",workouts:[]}}));
+    if(revoked && url.pathname==="/api/workouts" && init?.method==="POST")return new Response("{}",{status:409});
+    return base.transport(input,init);
+  };
+  return {...base,transport,revoke:()=>{revoked=!revoked;},delayRead:()=>{delayed=true;},releaseRead:()=>release?.(),failRead:()=>{fail=true;}};
+}
+export function GeneratedFlowFixture(){
+ const [fixture]=useState(generatedFlowFixture);
+ const [generated]=useState(()=>new GeneratedController(fixture.transport,fixture.verify));
+ const [workout]=useState(()=>new WorkoutController(fixture.transport,fixture.verify,()=>{}));
+ const [history]=useState(()=>new HistoryController(fixture.transport,fixture.verify));
+ const gs=useSyncExternalStore(generated.subscribe,generated.getSnapshot,generated.getSnapshot);
+ const ws=useSyncExternalStore(workout.subscribe,workout.getSnapshot,workout.getSnapshot);
+ const hs=useSyncExternalStore(history.subscribe,history.getSnapshot,history.getSnapshot);
+ const [screen,setScreen]=useState<"generated"|"workout"|"history">("generated");
+ const [notice,setNotice]=useState("");
+ useEffect(()=>{
+   generated.activate();
+   void fixture.transport("/api/profile",{method:"POST",body:JSON.stringify(validProfile)}).then(()=>generated.load());
+   return()=>{generated.dispose();workout.dispose();history.dispose();};
+ },[fixture,generated,workout,history]);
+ function navigate(next:typeof screen,id?:string,catalogue?:string){
+   generated.dispose();workout.dispose();history.dispose();setScreen(next);
+   if(next==="generated"){generated.activate();void generated.load();}
+   if(next==="workout"){workout.activate();void workout.load(id,undefined,catalogue);}
+   if(next==="history"){history.activate();void history.load(id);}
+ }
+ return <main className="mx-auto min-w-0 max-w-7xl space-y-6 px-4 py-5 [overflow-wrap:anywhere]" onClickCapture={event=>{
+   const a=(event.target as HTMLElement).closest("a");if(!a)return;event.preventDefault();event.stopPropagation();const url=new URL(a.href);
+   if(url.origin!==event.currentTarget.ownerDocument.location.origin){setNotice("TEST DATA ONLY: external navigation is unavailable.");return;}
+   if(url.pathname==="/workout")navigate("workout",url.searchParams.get("id")??undefined,url.searchParams.get("catalogue")??undefined);
+   else if(url.pathname==="/progress")navigate("history",url.searchParams.get("id")??undefined);
+   else setNotice("TEST DATA ONLY: use the real application for this destination.");
+ }}>
+ <h1 className="text-2xl font-bold">TEST DATA ONLY generated consumer workflow</h1>
+ <p>Production controllers and views. Fictional approvals, synthetic identity and disposable in-memory transport. No provider, database, clearance or real content approval.</p>
+ <nav className="flex flex-wrap gap-3" aria-label="TEST DATA ONLY screens">{(["generated","workout","history"] as const).map(s=><Button key={s} variant="outline" onClick={()=>navigate(s)}>{s}</Button>)}</nav>
+ <fieldset className="flex flex-wrap gap-3 border p-3"><legend>TEST DATA ONLY controls</legend>
+ <Button onClick={()=>{fixture.revoke();setNotice("TEST catalogue availability toggled. Reopen the exact version to recheck.");}}>Toggle catalogue availability</Button>
+ <Button onClick={()=>fixture.failRead()}>Fail next generated read</Button><Button onClick={()=>fixture.delayRead()}>Delay next generated read</Button><Button onClick={()=>fixture.releaseRead()}>Release generated read</Button>
+ <Button onClick={()=>{fixture.signOut();generated.invalidate();workout.invalidate();history.invalidate();}}>Synthetic account switch</Button>
+ <Button onClick={()=>{fixture.signIn();navigate(screen);}}>Synthetic sign in</Button>
+ </fieldset><p role="status">{notice}</p>
+ {screen==="generated"?<GeneratedView controller={generated} state={gs}/>:screen==="workout"?<WorkoutView key={screen} controller={workout} state={ws}/>:<HistoryView state={hs} retry={()=>void history.load()}/>}
+ </main>;
 }

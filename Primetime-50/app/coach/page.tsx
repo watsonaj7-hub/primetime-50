@@ -1,13 +1,14 @@
-import { Send, Sparkles } from "lucide-react";
+import { GeneratedExperience } from "@/components/workout/generated-experience";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function CoachPage() {
   return (
     <AppShell>
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto min-w-0 max-w-4xl space-y-6">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -15,24 +16,32 @@ export default function CoachPage() {
                 <Sparkles className="h-6 w-6" />
               </span>
               <div>
-                <h1 className="text-3xl font-bold">AI coach chat</h1>
-                <p className="text-muted-foreground">Ask for plan changes, substitutions, or weekly summaries.</p>
+                <h1 className="text-3xl font-bold">Coach availability</h1>
+                <p className="text-muted-foreground">General chat is unavailable. Saved generated plans are shown below.</p>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-[8px] bg-muted p-4">
-              <p className="font-semibold">Coach</p>
+              <p className="font-semibold">Automatic progression is unavailable</p>
               <p className="mt-2 leading-7 text-muted-foreground">
-                Tell me how your last workout felt. Mention pain, dizziness, sleep, soreness, and available equipment so I can adjust safely.
+                Saved history does not change your next prescription. Austin must approve progression,
+                recovery and screening rules before adaptive guidance can be provided.
+                This app does not monitor symptoms or provide health clearance.
               </p>
             </div>
-            <Textarea placeholder="Example: My knees felt good, but I missed Wednesday and only have bands this week." />
-            <Button className="w-full">
-              Send to coach <Send className="h-5 w-5" />
-            </Button>
+            <p className="leading-7 text-muted-foreground">
+              Reviewed-workout tracking remains available when your saved profile is supported and
+              approved content is available. Saved records are distinct from exercise readiness.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button asChild><Link href="/workout">View reviewed workouts</Link></Button>
+              <Button asChild variant="outline"><Link href="/progress">Open workout history</Link></Button>
+              <Button asChild variant="outline"><Link href="/onboarding">Review saved profile</Link></Button>
+            </div>
           </CardContent>
         </Card>
+        <GeneratedExperience />
       </div>
     </AppShell>
   );

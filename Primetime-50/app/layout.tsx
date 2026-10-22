@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PrimeFit 50+",
-  description: "Safe strength, nutrition, progress, and AI coaching for adults 50+."
+  description: "Reviewed workout tracking, saved history and target-free nutrition logs for adults 50+."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

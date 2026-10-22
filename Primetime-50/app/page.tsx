@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Bot,
   HeartPulse,
   LineChart,
   ShieldCheck,
@@ -19,18 +18,18 @@ import { ExerciseSpotlight } from "@/components/exercise-spotlight";
 
 const safetyCards: { title: string; body: string; icon: LucideIcon }[] = [
   {
-    title: "Safety first",
-    body: "Pain, dizziness, chest pain, and severe breathlessness are flagged for review.",
+    title: "Content review",
+    body: "Exercise content and screening rules require Austin’s review before exercise use.",
     icon: ShieldCheck
   },
   {
     title: "Progression",
-    body: "Loads rise conservatively only after sets feel controlled.",
+    body: "Automatic progression is unavailable. Saved performance does not change your next prescription.",
     icon: LineChart
   },
   {
-    title: "Low impact",
-    body: "Every plan includes joint-friendly alternatives and recovery days.",
+    title: "Saved records",
+    body: "Workout history shows saved sessions, not health clearance or a readiness score.",
     icon: HeartPulse
   }
 ];
@@ -45,11 +44,11 @@ export default function Home() {
             <span>Strength • Mobility • Longevity</span>
           </div>
           <h1 className="max-w-2xl text-4xl font-bold leading-tight sm:text-5xl">
-            Train stronger after 50 with plans that respect your joints, recovery, and goals.
+            Train stronger after 50 with reviewed workout tracking.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-white/84">
-            Your dashboard blends age-aware workouts, simple nutrition targets, progress trends,
-            and AI coaching guardrails into one calm mobile-first experience.
+            Record workouts, inspect saved history, and log meals, protein and water without
+            personalised targets. Workout availability depends on supported saved information and approved content.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" variant="secondary">
@@ -58,8 +57,8 @@ export default function Home() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outlineOnDark">
-              <Link href="/coach">
-                Ask the AI coach <Bot className="h-5 w-5" />
+              <Link href="/workout">
+                View reviewed workouts <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
           </div>
