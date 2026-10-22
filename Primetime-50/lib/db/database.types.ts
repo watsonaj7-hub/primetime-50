@@ -20,6 +20,7 @@ type Table<Row, Insert> = { Row: Row; Insert: Insert; Update: Partial<Insert>; R
 export type Database = {
   public: {
     Tables: {
+      nutrition_entries: Table<{ id:string; user_id:string; kind:string; logged_on:string; timezone:string; description:string|null; protein_tenths:number|null; water_ml:number|null; revision:number; created_at:string; updated_at:string }, never>;
       workout_logs: Table<WorkoutLogRow, { user_id: string } & Partial<WorkoutLogRow>>;
       exercise_set_logs: Omit<Table<SetLogRow, { user_id: string; workout_log_id: string; set_number: number } & Partial<SetLogRow>>, "Relationships"> & { Relationships: [{ foreignKeyName: "set_log_owner"; columns: ["user_id", "workout_log_id"]; isOneToOne: false; referencedRelation: "workout_logs"; referencedColumns: ["user_id", "id"] }] };
       profiles: Table<ProfileRow, { user_id: string } & Partial<Omit<ProfileRow, "user_id">>>;
@@ -29,6 +30,8 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      read_nutrition_day: { Args: { payload: Json }; Returns: Json };
+      mutate_nutrition_record: { Args: { payload: Json }; Returns: Json };
       reviewed_workout_availability: { Args: Record<string, never>; Returns: Json };
       start_workout_record: { Args: { payload: Json }; Returns: Json };
       save_workout_record: { Args: { payload: Json }; Returns: Json };
