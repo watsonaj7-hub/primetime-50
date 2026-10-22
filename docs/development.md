@@ -29,6 +29,23 @@ Use `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium` in this cloud machine. On
 
 Inter is used if installed locally; otherwise the existing system sans-serif stack is used. No font-network download is needed to build or run.
 
+## SQL-only migration and ownership qualification
+
+When the container stack is unavailable, `pnpm test:sql` independently exercises the **real ordered migrations, profile RPC, constraints and RLS** using an installed native PostgreSQL toolchain. This is supplementary SQL evidence, not a mocked successful Supabase integration run.
+
+```sh
+cd Primetime-50
+# initdb, postgres, pg_ctl and psql must come from one compatible installation.
+POSTGRES_BIN=/absolute/path/to/postgresql/bin pnpm test:sql
+# Omit POSTGRES_BIN when those binaries are already on PATH.
+```
+
+The runner creates a fresh task-owned cluster under `TMPDIR`, or `~/.cache/primefit-sql` when unset. Keep the scratch path short enough for PostgreSQL Unix sockets. It has **no TCP listener**, a private socket directory, no inherited `PG*` connection settings and no connection to existing databases. It stops its own cluster on success/failure, removes successful disposable fixtures and preserves failed fixtures/logs for diagnosis. An installation with bundled shared libraries may also require its normal `LD_LIBRARY_PATH`; this is an invocation-only setting, not a global library change.
+
+The test-only `auth.users`/`auth.uid()` interface and restricted roles supply synthetic SQL identities. The production migrations and their functions are executed unchanged; no Auth or REST server is emulated. Named assertions cover bootstrap metadata/role denial, profile/equipment save and rollback, private drafts, distinct sets, bounded values, anonymous/cross-user denial, forged parent IDs, preservation and fresh-SQL-connection reads. Receipt counts are checked against the declared assertion inventory. This harness cannot prove real login/reauthentication, email delivery, generated Supabase types, REST/API wiring, browser/mobile behaviour, reviewed exercise content or workout completion idempotency. Keep the existing integration/security/browser gates unchanged.
+
+Qualification on 22/10/2026 used native PostgreSQL **18.1**: all four current migrations and 45 SQL assertions passed. The Supabase configuration still specifies PostgreSQL **15**; this additional result is not a PostgreSQL-15 or full-Supabase qualification. The database type-generation and authenticated integration gates remain unresolved while the isolated Supabase route is blocked. No production schema/configuration was modified.
+
 ## Local database and authentication
 
 The supported local Supabase stack uses Docker, PostgreSQL 15, Auth, REST, gateway and email inbox. Images need substantial Docker disk space; allow enough for unpacked layers, not just compressed image sizes. The cloud onboarding machine's 32GB filesystem was insufficient for the current CLI's PostgreSQL 15/17 images. A smaller CLI could not be fetched because the egress proxy currently returned HTTP 503. See `phase-1-implementation.md`; the SQL and full auth/persistence gate are not yet validated.
