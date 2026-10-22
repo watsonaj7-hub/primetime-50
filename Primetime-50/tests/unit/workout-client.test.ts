@@ -222,3 +222,19 @@ it.each(["401","false"] as const)("I1 still clears private input for a current-g
   await c.save(); expect(c.state.signedOut).toBe(true); expect(c.state.record).toBeNull(); expect(c.state.drafts).toEqual([]); expect(c.state.busy).toBe(false);
   const attempts = writes.length; await c.save(); expect(writes).toHaveLength(attempts);
 });
+
+it("treats a generated catalogue URL as an exact hint, rejecting unavailable versions without a start", async () => {
+  const c = controller();
+  await c.load(undefined, undefined, "71000000-0000-4000-8000-000000000099");
+  expect(c.state.selectionHint).toBe("71000000-0000-4000-8000-000000000099");
+  expect(c.state.hintUnavailable).toBe(true);
+  expect(writes).toHaveLength(0);
+  expect(c.state.record).toBeNull();
+});
+it("matches a generated hint against fresh availability without starting or supplying a prescription", async () => {
+  const c = controller(); await c.load(undefined,undefined,version);
+  expect(c.state.selectionHint).toBe(version); expect(c.state.hintUnavailable).toBe(false); expect(writes).toEqual([]);
+  boundary.rpc.mockResolvedValueOnce({data:{state:"unavailable",workouts:[]},error:null});
+  await c.load(undefined,undefined,version); await c.start(version,"UTC");
+  expect(c.state.hintUnavailable).toBe(true); expect(writes).toEqual([]);
+});

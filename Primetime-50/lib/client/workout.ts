@@ -74,9 +74,9 @@ export function isDirty(r: WorkoutRecord | null, drafts: SetDraft[]) {
 }
 export type WorkoutState = {
   busy: boolean; message: string; error: string; availability: Availability | null; record: WorkoutRecord | null;
-  recent: WorkoutRecord[]; drafts: SetDraft[]; needsReconcile: boolean; signedOut: boolean;
+  selectionHint: string | null; hintUnavailable: boolean; recent: WorkoutRecord[]; drafts: SetDraft[]; needsReconcile: boolean; signedOut: boolean;
 };
-const initial = (): WorkoutState => ({ busy: false, message: "Loading reviewed workouts…", error: "", availability: null, record: null, recent: [], drafts: [], needsReconcile: false, signedOut: false });
+const initial = (): WorkoutState => ({ busy: false, message: "Loading reviewed workouts…", error: "", availability: null, record: null, selectionHint: null, hintUnavailable: false, recent: [], drafts: [], needsReconcile: false, signedOut: false });
 
 // One ephemeral controller per mounted identity. No autosave, browser health storage or generated set IDs.
 export class WorkoutController {
@@ -128,16 +128,17 @@ export class WorkoutController {
     if (!r || r.id !== id) throw new Error("The original reviewed workout was not found. Retry opening it; no replacement has been created.");
     return r;
   }
-  async load(id?: string, intent?: Start) {
+  async load(id?: string, intent?: Start, selectionHint?: string) {
     if (intent) this.intent = startWorkoutSchema.parse(intent);
     return this.run(async epoch => {
       if (id) {
         const r = await this.read(epoch, id);
         if (this.active && epoch === this.epoch) this.update({ record: r, drafts: draftsFor(r), message: r.completed ? "Completed workout. Saved values are read-only." : "Saved workout opened.", needsReconcile: false });
       } else {
+        this.update({ selectionHint: selectionHint ?? null, hintUnavailable: false });
         const a = z.object({ availability: availabilitySchema }).parse(await this.request(epoch, "/api/workouts?view=reviewed-availability"));
         const recent = z.object({ workouts: z.array(z.unknown()) }).parse(await this.request(epoch, "/api/workouts"));
-        if (this.active && epoch === this.epoch) this.update({ availability: a.availability, recent: recent.workouts.flatMap(r => { const p = record.safeParse(r); return p.success ? [p.data] : []; }), message: "Workouts checked against your saved information." });
+        if (this.active && epoch === this.epoch) this.update({ availability: a.availability, hintUnavailable: !!selectionHint && !a.availability.workouts.some(w => w.catalogue_version_id === selectionHint), recent: recent.workouts.flatMap(r => { const p = record.safeParse(r); return p.success ? [p.data] : []; }), message: "Workouts checked against your saved information." });
       }
     });
   }

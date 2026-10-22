@@ -47,3 +47,11 @@ it("offers a real workout navigation link instead of inert Log/Swap buttons", ()
   expect(html).not.toContain("Swap exercise");
   expect(html).not.toContain("<button");
 });
+it("previews only the exact fresh generated selection hint and shows a refusal for a revoked hint", () => {
+  const c = new WorkoutController(fetch,async()=>true,()=>{}); const r=testRecord();
+  const availability: Availability={state:"available",workouts:[{catalogue_version_id:r.catalogue_version_id,prescription_snapshot:r.prescription_snapshot}]};
+  let html=renderToStaticMarkup(createElement(WorkoutView,{controller:c,state:{...c.state,availability,selectionHint:r.catalogue_version_id,hintUnavailable:false}}));
+  expect(html).toContain("TEST screening"); expect(html).toContain("Review this freshly available version"); expect(html).toContain("checked");
+  html=renderToStaticMarkup(createElement(WorkoutView,{controller:c,state:{...c.state,availability,selectionHint:"71000000-0000-4000-8000-000000000099",hintUnavailable:true}}));
+  expect(html).toContain("requested catalogue version is not currently available"); expect(html).not.toContain("TEST screening"); expect(html).not.toContain("checked");
+});

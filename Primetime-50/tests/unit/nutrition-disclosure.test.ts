@@ -27,9 +27,10 @@ it("describes owned target-free nutrition logging without calling it sample cont
   expect(html).not.toContain("1,920");
   expect(account.createClient).not.toHaveBeenCalled();
 });
-it("preserves coach/library samples and every history, unavailable-analytics and reviewed-workout caveat", async () => {
+it("preserves truthful coach/library limits and every history, unavailable-analytics and reviewed-workout caveat", async () => {
   const html = await renderedNutrition();
-  expect(html).toContain("coach and exercise library panels contain sample content.");
+  expect(html).toContain("General chat is unavailable; public exercise guidance is withheld pending review.");
+  expect(html).not.toContain("coach and exercise library panels contain sample content.");
   expect(html).toContain("History uses saved workout records; habit and body measurement analytics are unavailable.");
   expect(html).toContain("Reviewed workouts require supported saved information and approved content.");
 });

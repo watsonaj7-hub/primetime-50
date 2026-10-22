@@ -66,7 +66,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8"><p className="mb-5 rounded-[8px] border bg-secondary p-3 text-sm">Nutrition logs use your entered meals, protein and water, without personalised targets. Saving requires configured account services. The coach and exercise library panels contain sample content. History uses saved workout records; habit and body measurement analytics are unavailable. Reviewed workouts require supported saved information and approved content.</p>{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8"><p className="mb-5 rounded-[8px] border bg-secondary p-3 text-sm">Nutrition logs use your entered meals, protein and water, without personalised targets. Saving requires configured account services. General chat is unavailable; public exercise guidance is withheld pending review. History uses saved workout records; habit and body measurement analytics are unavailable. Reviewed workouts require supported saved information and approved content.</p>{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
         <div className="grid grid-cols-5">
           {nav.map((item) => (

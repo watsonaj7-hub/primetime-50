@@ -12,28 +12,28 @@ export function CoachPanel() {
             <Bot className="h-6 w-6" />
           </span>
           <div>
-            <h2 className="text-2xl font-bold">AI coach</h2>
-            <p className="text-base text-muted-foreground">Structured, safety-aware plan guidance</p>
+            <h2 className="text-2xl font-bold">Coach availability</h2>
+            <p className="text-base text-muted-foreground">Reviewed tracking and coaching limits</p>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-[8px] bg-muted p-4">
-          <p className="font-semibold">This week’s adjustment</p>
+          <p className="font-semibold">Automatic progression is unavailable</p>
           <p className="mt-2 leading-7 text-muted-foreground">
-            You completed all planned sets at RPE 6-7. Increase lower-body loads by 2.5% only if
-            knees remain pain-free and sleep stays above 7 hours.
+            Saved workout history is descriptive evidence. Changes to prescriptions require approved progression and recovery rules
+            from Austin; no automatic load adjustment is provided.
           </p>
         </div>
         <div className="mt-4 flex gap-3 rounded-[8px] border border-destructive/25 bg-destructive/5 p-4 text-destructive">
           <ShieldAlert className="mt-1 h-5 w-5 shrink-0" />
           <p className="text-sm leading-6">
-            Chest pain, dizziness, or severe shortness of breath triggers a safety flag and medical
-            clearance recommendation.
+            This app does not monitor symptoms or provide health clearance. Saved records do not
+            establish exercise readiness.
           </p>
         </div>
         <Button asChild className="mt-4 w-full">
-          <Link href="/coach">Open coach chat</Link>
+          <Link href="/progress">Open workout history</Link>
         </Button>
       </CardContent>
     </Card>

@@ -1,3 +1,5 @@
+import { requireUser } from '@/lib/auth/require-user';
+import { decodeGeneratedRecords } from '@/lib/ai/generated-records';
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
@@ -28,4 +30,16 @@ export async function generateWorkout(userId: string, id: string) {
     },
     fail: async requestId => { await db.rpc('fail_generated_workout', { owner_id: userId, request_id: requestId }); }
   });
+}
+
+// Reads use the authenticated owner client and existing RLS, never the generation
+// service-role transport or provider gate. Historical approval is not admission.
+export async function readGeneratedWorkouts(requestId?: string) {
+  const { supabase, user } = await requireUser();
+  let query = supabase.from('generated_workout_plans').select('id,request_id,policy_version_id,created_at,selection,provenance').eq('user_id', user.id);
+  if (requestId !== undefined) query = query.eq('request_id', z.string().uuid().parse(requestId));
+  const { data, error } = await query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(20);
+  if (error) throw new AppError(503, 'Saved generated plans are unavailable.');
+  try { return decodeGeneratedRecords(data ?? []); }
+  catch { throw new AppError(503, 'Saved generated plan references could not be confirmed. No prescription is shown.'); }
 }

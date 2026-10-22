@@ -5,36 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/browser";
-import { WorkoutController, isDirty, safeStates, type WorkoutSnapshot, type WorkoutState } from "@/lib/client/workout";
+import { WorkoutController, isDirty, safeStates, type WorkoutState } from "@/lib/client/workout";
+import { Prescription } from "@/components/workout/prescription";
 import { startWorkoutSchema } from "@/lib/validation/workout";
-
-function Prescription({ snapshot, historical = false }: { snapshot: WorkoutSnapshot; historical?: boolean }) {
-  const p = snapshot.prescription;
-  return <section className="min-w-0 space-y-3 break-words" aria-label={historical ? "Original saved prescription" : "Reviewed prescription"}>
-    <h2 className="text-2xl font-bold">{p.title}</h2>
-    {historical && <p className="rounded-[8px] bg-secondary p-3">Original prescription saved at start. This record does not confirm current eligibility or approval.</p>}
-    <p>{p.session_minutes} minutes</p>
-    <dl className="space-y-2 text-sm">
-      <div><dt className="font-semibold">Content and version</dt><dd>{snapshot.content_id} · {snapshot.content_version}</dd></div>
-      <div><dt className="font-semibold">Rule version</dt><dd>{snapshot.rule_version}</dd></div>
-      <div><dt className="font-semibold">Source</dt><dd className="[overflow-wrap:anywhere]">{snapshot.source_uri}</dd></div>
-      <div><dt className="font-semibold">Approval recorded</dt><dd>{snapshot.reviewer_name}, {snapshot.reviewer_role} · {snapshot.approved_at}</dd></div>
-    </dl>
-    {([['Screening', p.screening_rules], ['Referral', p.referral_rules], ['Stop rules', p.stop_rules], ['Progression', p.progression_rules], ['Measurement', p.measurement]] as const).map(([label, content]) => <div key={label}><h3 className="font-semibold">{label}</h3><p className="whitespace-pre-wrap">{content}</p></div>)}
-    <ol className="space-y-3">
-      {p.exercises.map(e => <li key={e.exercise_key} className="min-w-0 rounded-[8px] border bg-background p-3">
-        <h3 className="text-lg font-semibold">{e.exercise_name}</h3>
-        <p>{e.sets} sets · {e.reps !== null ? `${e.reps} reps` : `${e.duration_seconds} seconds per set`} · Rest {e.rest_seconds} seconds</p>
-        <p>Load: {e.load_guidance}</p><p>RPE: {e.rpe_guidance}</p><p className="whitespace-pre-wrap">Cues: {e.cues}</p><p className="whitespace-pre-wrap">Stop rules: {e.stop_rules}</p>
-        <p>Equipment: {e.equipment.length ? e.equipment.join(", ") : "None specified"}</p><p>Exclusions: {e.exclusions.length ? e.exclusions.join(", ") : "None listed"}</p>
-      </li>)}
-    </ol>
-  </section>;
-}
 
 export function WorkoutView({ state, controller, compact = false }: { state: WorkoutState; controller: WorkoutController; compact?: boolean }) {
   const feedback = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState("");
+  const [chosen, setSelected] = useState("");
+  const selected = chosen || (!state.hintUnavailable && state.availability?.workouts.some(w => w.catalogue_version_id === state.selectionHint) ? state.selectionHint! : "");
   useEffect(() => { if (state.error) feedback.current?.focus(); }, [state.error]);
   const r = state.record;
   const dirty = isDirty(r, state.drafts);
@@ -52,6 +30,7 @@ export function WorkoutView({ state, controller, compact = false }: { state: Wor
             {available?.state === "available" && <p>{available.workouts.length} reviewed {available.workouts.length === 1 ? "workout is" : "workouts are"} available. Choose and review the exact prescription in the logger.</p>}
             <Button asChild><Link href="/workout">Open workout logger</Link></Button>
           </> : <>
+            {!r && state.selectionHint && <p role={state.hintUnavailable ? "alert" : "status"}>{state.hintUnavailable ? "The requested catalogue version is not currently available. No alternative has been selected." : "Review this freshly available version before explicitly starting. Saved generated approval is historical; the server rechecks admission at start."}</p>}
             {!r && available?.state === "available" && <form className="space-y-4" onSubmit={e => { e.preventDefault(); if (selected) void controller.start(selected, Intl.DateTimeFormat().resolvedOptions().timeZone); }} aria-busy={state.busy}>
               <fieldset disabled={locked || controller.hasStartIntent()} className="min-w-0 space-y-4">
                 <legend className="mb-3 text-xl font-semibold">Choose a reviewed workout</legend>
@@ -61,7 +40,7 @@ export function WorkoutView({ state, controller, compact = false }: { state: Wor
               </fieldset>
             </form>}
             {!r && controller.hasStartIntent() && <div className="space-y-3"><p>The original start identity is retained. Check whether it was saved before retrying that same start.</p><div className="flex flex-wrap gap-3"><Button disabled={locked} onClick={() => void controller.reconcile()}>Check original start</Button><Button variant="outline" disabled={locked} onClick={() => void controller.retryStart()}>Retry original start</Button></div></div>}
-            {!r && !controller.hasStartIntent() && <Button variant="outline" disabled={locked} onClick={() => void controller.load(new URLSearchParams(window.location.search).get("id") ?? undefined)}>Retry loading workouts</Button>}
+            {!r && !controller.hasStartIntent() && <Button variant="outline" disabled={locked} onClick={() => void controller.load(new URLSearchParams(window.location.search).get("id") ?? undefined, undefined, new URLSearchParams(window.location.search).get("catalogue") ?? undefined)}>Retry loading workouts</Button>}
             {!r && state.recent.length > 0 && <section className="space-y-3"><h2 className="text-xl font-bold">Reopen a saved workout</h2><p className="text-sm text-muted-foreground">Up to 100 recent records. Opening a record keeps its original identity and prescription.</p><ul className="space-y-2">{state.recent.map(w => <li key={w.id}><Link className="block rounded-[8px] border p-3 underline focus-visible:outline focus-visible:outline-2" href={`/workout?id=${w.id}`}>{w.prescription_snapshot.prescription.title} · {w.performed_at} · {w.completed ? "Completed" : "Draft"}</Link></li>)}</ul></section>}
           </>}
           <p className="text-sm"><Link className="underline focus-visible:outline focus-visible:outline-2" href="/settings">Review saved information in Settings</Link>. Workout selection cannot supply missing professional review.</p>
@@ -122,7 +101,7 @@ export function WorkoutExperience({ userId, compact = false }: { userId?: string
     const query = new URLSearchParams(window.location.search);
     const id = compact ? undefined : query.get("id") ?? undefined;
     const intent = startWorkoutSchema.safeParse({ id, mode: "reviewed", timezone: query.get("timezone"), catalogue_version_id: query.get("version") });
-    void controller.load(id, intent.success ? intent.data : undefined);
+    void controller.load(id, intent.success ? intent.data : undefined, compact ? undefined : query.get("catalogue") ?? undefined);
     return () => { subscription?.unsubscribe(); controller.dispose(); };
   }, [controller, userId, compact]);
   useEffect(() => {

@@ -6,6 +6,7 @@ import postgres from 'postgres';
 import { randomUUID } from 'node:crypto';
 import { stackConfig, testAccount } from '../local-stack';
 import { validProfile } from '../fixture';
+import { decodeGeneratedRecords } from '@/lib/ai/generated-records';
 import { generateWith, type GenerationBoundary } from '@/lib/ai/generated-pipeline';
 import type { Database } from '@/lib/db/database.types';
 const config=stackConfig();
@@ -114,4 +115,15 @@ it('executes trusted resolution, atomic concurrency/idempotency, validated persi
  await expect(generateWith(id,boundary)).rejects.toThrow();expect(calls).toBe(1);
  // Historical provenance persists as historical evidence; it is not current admission.
  expect((await a.client.from('generated_workout_plans').select('*').eq('request_id',id)).data).toHaveLength(1);
+ // Consumer decoding on ordinary authenticated owner SELECT, after revocation.
+ // No provider gate/replay is used. This connected extension remains NOTRUN here.
+ const fields='id,request_id,policy_version_id,created_at,selection,provenance';
+ const historical=await a.client.from('generated_workout_plans').select(fields).eq('user_id',a.user.id).eq('request_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(20);
+ expect(historical.error).toBeNull();
+ const decoded=decodeGeneratedRecords(historical.data);expect(decoded).toHaveLength(1);
+ expect(decoded[0].provenance.catalogue[0].catalogue_version_id).toBe(catalogueId);
+ expect(decoded[0].selection.weeks[0].sessions[0].catalogue_version_id).toBe(catalogueId);
+ const foreign=await b.client.from('generated_workout_plans').select(fields).eq('user_id',a.user.id).eq('request_id',id).limit(20);
+ expect(foreign.error).toBeNull();expect(decodeGeneratedRecords(foreign.data)).toEqual([]);expect(calls).toBe(1);
+
 });
