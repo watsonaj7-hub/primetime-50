@@ -35,11 +35,13 @@ export async function completeWorkout(input: unknown) {
   if (error) throw storageError(error);
   return data;
 }
-export async function readWorkouts(id?: string | null) {
+export async function readWorkouts(id?: string | null, completedOnly = false) {
   const { supabase, user } = await requireUser();
   // Nested sets use existing same-owner FK/RLS. The explicit owner filter is defence in depth.
   let query = supabase.from("workout_logs").select("id,catalogue_version_id,performed_at,completed,completed_at,record_mode,record_timezone,prescription_snapshot,revision,exercise_set_logs!set_log_owner(id,exercise_key,exercise_name,set_number,reps,weight,rpe)")
     .eq("user_id", user.id).in("record_mode", ["personal", "reviewed"]);
+  // History must filter before LIMIT: unfinished drafts must not displace completed sessions.
+  if (completedOnly) query = query.eq("completed", true);
   if (id != null) query = query.eq("id", workoutId.parse(id));
   const { data, error } = await query.order("performed_at", { ascending: false }).order("id", { ascending: false }).limit(100);
   if (error) throw storageError(error);

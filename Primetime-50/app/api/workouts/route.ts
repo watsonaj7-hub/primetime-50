@@ -6,7 +6,7 @@ const headers = { "Cache-Control": "no-store" };
 export async function GET(request: Request) {
   try {
     if (new URL(request.url).searchParams.get("view") === "reviewed-availability") return NextResponse.json({ availability: await readReviewedAvailability() }, { headers });
-    return NextResponse.json({ workouts: await readWorkouts(new URL(request.url).searchParams.get("id")) }, { headers }); }
+    return NextResponse.json({ workouts: await readWorkouts(new URL(request.url).searchParams.get("id"), new URL(request.url).searchParams.get("view") === "history") }, { headers }); }
   catch (error) { return errorResponse(error); }
 }
 export async function POST(request: Request) {
