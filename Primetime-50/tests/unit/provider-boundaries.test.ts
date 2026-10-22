@@ -31,7 +31,7 @@ async function expectPrivateFree(response: Response) {
   expect(privateValues.some(value => body.includes(value))).toBe(false);
   expect(privateNames.some(name => body.includes(name))).toBe(false);
 }
-describe.each([["AI", ai, {}], ["checkout", checkout, { plan: "pro" }]] as const)("%s production route", (_name, handler, input) => {
+describe.each([["AI", ai, { request_id: "61000000-0000-4000-8000-000000000001" }], ["checkout", checkout, { plan: "pro" }]] as const)("%s production route", (_name, handler, input) => {
   it.each([null, "https://evil.example"])("rejects origin %s before authentication, parsing or provider construction", async originValue => {
     const req = request("{", originValue);
     const response = await handler.POST(req);
@@ -47,10 +47,10 @@ describe.each([["AI", ai, {}], ["checkout", checkout, { plan: "pro" }]] as const
     expect(boundary.openai).not.toHaveBeenCalled(); expect(boundary.stripe).not.toHaveBeenCalled();
     await expectPrivateFree(response);
   });
-  it("returns only the safe success payload from a doubled provider", async () => {
+  it("returns the bounded result: AI remains disabled without separate activation, checkout uses its double", async () => {
     const response = await handler.POST(request(JSON.stringify(input)));
-    expect(response.status).toBe(200);
-    expect(boundary.ai.mock.calls.length + boundary.checkout.mock.calls.length).toBe(1);
+    expect(response.status).toBe(_name === "AI" ? 503 : 200);
+    expect(boundary.ai.mock.calls.length + boundary.checkout.mock.calls.length).toBe(_name === "AI" ? 0 : 1);
     await expectPrivateFree(response);
   });
   it("suppresses private provider exceptions", async () => {

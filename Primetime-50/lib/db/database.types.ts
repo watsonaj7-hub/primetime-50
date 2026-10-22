@@ -20,6 +20,11 @@ type Table<Row, Insert> = { Row: Row; Insert: Insert; Update: Partial<Insert>; R
 export type Database = {
   public: {
     Tables: {
+      generated_budget_guard: Table<{ id: boolean; revision: number }, never>;
+      generated_workout_policies: Table<{ id: string; rule_version: string; status: string; reviewer_name: string | null; reviewer_role: string | null; approved_at: string | null; source_uri: string; eligible_contexts: Json; rules: Json }, never>;
+      generated_provider_activations: Table<{ id: string; status: string; reviewer_name: string | null; reviewer_role: string | null; approved_at: string | null; model: string; price_review_reference: string; reserve_microusd: number; daily_budget_microusd: number; user_daily_calls: number; min_interval_seconds: number }, never>;
+      generated_workout_requests: Table<{ user_id: string; request_id: string; policy_version_id: string; activation_id: string; context_revision: number; context: Json; reserved_microusd: number; created_at: string; state: string }, never>;
+      generated_workout_plans: Table<{ id: string; user_id: string; request_id: string; policy_version_id: string; created_at: string; selection: Json; provenance: Json }, never>;
       workout_logs: Table<WorkoutLogRow, { user_id: string } & Partial<WorkoutLogRow>>;
       exercise_set_logs: Omit<Table<SetLogRow, { user_id: string; workout_log_id: string; set_number: number } & Partial<SetLogRow>>, "Relationships"> & { Relationships: [{ foreignKeyName: "set_log_owner"; columns: ["user_id", "workout_log_id"]; isOneToOne: false; referencedRelation: "workout_logs"; referencedColumns: ["user_id", "id"] }] };
       profiles: Table<ProfileRow, { user_id: string } & Partial<Omit<ProfileRow, "user_id">>>;
@@ -29,6 +34,9 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      reserve_generated_workout: { Args: { owner_id: string; request_id: string }; Returns: Json };
+      finish_generated_workout: { Args: { owner_id: string; request_id: string; selection: Json }; Returns: Json };
+      fail_generated_workout: { Args: { owner_id: string; request_id: string }; Returns: undefined };
       reviewed_workout_availability: { Args: Record<string, never>; Returns: Json };
       start_workout_record: { Args: { payload: Json }; Returns: Json };
       save_workout_record: { Args: { payload: Json }; Returns: Json };
