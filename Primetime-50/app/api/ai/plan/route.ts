@@ -10,5 +10,9 @@ export async function POST(request: Request) {
     const input = generatedRequestSchema.parse(await readJson(request, 1024));
     const plan = await generateWorkout(user.id, input.request_id);
     return NextResponse.json({ plan }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) { return errorResponse(error); }
+  } catch (error) {
+    const response = errorResponse(error);
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
+  }
 }
