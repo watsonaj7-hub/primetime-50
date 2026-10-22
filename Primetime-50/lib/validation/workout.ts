@@ -4,7 +4,7 @@ const revision = z.number().int().min(0).max(2147483646);
 const timezone = z.string().min(1).max(100).refine(value => {
   try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; }
 }, "Choose a recognised timezone.");
-export const startWorkoutSchema = z.object({ id: workoutId, mode: z.enum(["personal", "reviewed"]), timezone }).strict();
+export const startWorkoutSchema = z.object({ id: workoutId, mode: z.enum(["personal", "reviewed"]), timezone, catalogue_version_id: workoutId.optional() }).strict().refine(value => value.mode === "reviewed" || value.catalogue_version_id === undefined, { message: "Personal records cannot reference a reviewed catalogue." });
 export const recordedSetSchema = z.object({
   id: workoutId, exercise_key: workoutId, exercise_name: z.string().trim().min(1).max(200),
   set_number: z.number().int().min(1).max(20),
