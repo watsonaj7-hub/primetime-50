@@ -31,7 +31,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
       <header className="sticky top-0 z-20 border-b bg-background/92 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3 text-xl font-bold">
             <span className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-primary text-primary-foreground">
               <ShieldCheck className="h-6 w-6" />
@@ -66,7 +66,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8"><p className="mb-5 rounded-[8px] border bg-secondary p-3 text-sm">Workout, nutrition, progress and coach panels contain sample content. Tracking and coaching are not connected yet.</p>{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8"><p className="mb-5 rounded-[8px] border bg-secondary p-3 text-sm">Nutrition, progress and coach panels contain sample content. Reviewed workouts require supported saved information and approved content.</p>{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
         <div className="grid grid-cols-5">
           {nav.map((item) => (
