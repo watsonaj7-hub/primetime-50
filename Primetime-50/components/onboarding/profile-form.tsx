@@ -89,7 +89,8 @@ export function ProfileForm({ profile, draft = null, onboarding = false }: { pro
       {onboarding && step === 3 && <div className="space-y-3 rounded-[8px] bg-muted p-4"><h2 className="text-xl font-bold">Review your profile</h2><p>Name: {values.display_name || "Not entered"}</p><p>Goal: {title(values.primary_goal || "not_entered")}</p><p>Training: {values.training_days_per_week || "—"} days/week, {values.preferred_session_minutes || "—"} minutes/session</p><p>Equipment: {equipment.map(title).join(", ") || "Not selected"}</p><p>Health: {title(values.health_status)}</p><p>Restrictions: {healthRestrictions.map(title).join(", ") || "None selected"}</p><p className="text-sm">Review your preferences before saving. You can update them later in Settings.</p></div>}
       <div className="flex flex-wrap gap-3">
         {onboarding && step > 0 && <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>Back</Button>}
-        {onboarding && step < 3 ? <Button type="button" onClick={() => { setState(initialState); setStep(step + 1); }}>Continue</Button> : <Button type="submit">{pending ? "Saving…" : onboarding ? "Save profile" : "Save settings"}</Button>}
+        {/* Navigation must not turn into a submit button during its own activation. */}
+        {onboarding && step < 3 ? <Button key="continue" type="button" onClick={() => { setState(initialState); setStep(step + 1); }}>Continue</Button> : <Button key="save" type="submit">{pending ? "Saving…" : onboarding ? "Save profile" : "Save settings"}</Button>}
       </div>
     </fieldset>
     <MutationStatus state={state} />

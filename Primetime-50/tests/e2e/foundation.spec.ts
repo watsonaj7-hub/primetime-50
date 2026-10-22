@@ -57,9 +57,25 @@ test("register, confirm, onboard, save, log out/in and edit a private profile", 
     await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page.getByLabel("Health limitations", { exact: true }).selectOption("none_reported");
     await page.getByLabel("Dumbbells", { exact: true }).check();
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-    await page.getByRole("button", { name: "Save profile", exact: true }).click();
+    const completionRequests: string[] = [];
+    page.on("request", request => {
+      if (request.method() === "PUT" && new URL(request.url()).pathname === "/api/profile") completionRequests.push(request.url());
+    });
+    // Continue is navigation, including keyboard activation. It must not become
+    // a submit button during its own native click default action (I2).
+    for (const activation of ["keyboard", "click"]) {
+      const continueButton = page.getByRole("button", { name: "Continue", exact: true });
+      if (activation === "keyboard") await continueButton.press("Enter");
+      else await continueButton.click();
+      await expect(page.getByRole("heading", { name: "Review your profile", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Save profile", exact: true })).toBeEnabled();
+      await expect(page.locator("form").filter({ has: page.getByRole("heading", { name: "Review your profile", exact: true }) })).toHaveAttribute("aria-busy", "false");
+      expect(completionRequests).toEqual([]);
+      if (activation === "keyboard") await page.getByRole("button", { name: "Back", exact: true }).click();
+    }
+    await page.getByRole("button", { name: "Save profile", exact: true }).press("Enter");
     await expect(page.getByRole("status").filter({ hasText: "Your profile is saved" })).toBeVisible();
+    expect(completionRequests).toHaveLength(1);
     const completed = (await (await page.request.get("/api/profile")).json()).profile;
     expect(Object.fromEntries(Object.entries(completed).filter(([key]) => !["updated_at", "onboarding_completed_at"].includes(key)))).toEqual({
       display_name: "Browser member", date_of_birth: "1965-04-12", sex: "not_specified", unit_system: "metric",
