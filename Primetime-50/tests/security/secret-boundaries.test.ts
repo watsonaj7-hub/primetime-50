@@ -1,21 +1,17 @@
 import { expect, it } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-const privateNames = ["PRIMEFIT_AI_KEY", "OPENAI_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SERVICE_ROLE_KEY"];
+import { privateReferences } from "./browser-secrets";
 function files(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? files(join(root,entry.name)) : [join(root,entry.name)]);
 }
-it("production browser bundles do not reference private provider configuration", () => {
+it("production browser assets contain no private configuration names or configured values", () => {
   if (!existsSync(".next/static")) throw new Error("Run pnpm build before the production bundle security check.");
-  const bundles = files(".next/static").filter(file => file.endsWith(".js"));
-  expect(bundles.length).toBeGreaterThan(0);
-  for (const file of bundles) {
-    const source = readFileSync(file,"utf8");
-    for (const name of privateNames) {
-      expect(source, `Private configuration reference in ${file}`).not.toContain(name);
-      const value = process.env[name];
-      // Values are inspected for presence only and never included in failure messages.
-      if (value) expect(source.includes(value), `Private value leaked in ${file}`).toBe(false);
-    }
+  const assets = files(".next/static");
+  expect(assets.some(file => file.endsWith(".js"))).toBe(true);
+  for (const file of assets) {
+    const findings = privateReferences(readFileSync(file, "utf8"), process.env);
+    // Only labels and the asset path enter assertions, including on failure.
+    expect(findings, `Private configuration in ${file}`).toEqual([]);
   }
 });

@@ -28,6 +28,26 @@ it("starts one draft on concurrent retries; refuses changed provenance and revie
   expect((await POST(req("POST", { ...start, timezone: "UTC" }))).status).toBe(409);
   expect((await a.client.rpc("start_workout_record", { payload: { ...start, mode: "reviewed" } })).error).not.toBeNull();
 });
+it("guards draft provenance and timezone before completion while allowing an ordinary draft edit", async () => {
+  const original = await admin.from("workout_logs").select("*").eq("id", id).single();
+  expect(original.error).toBeNull();
+  expect(original.data).toMatchObject({ completed: false, completed_at: null, record_timezone: "Australia/Melbourne" });
+  // Trusted fixture reaches the trigger rather than authenticated managed-write RLS.
+  // Positive control proves an accessible draft can still be updated.
+  const edited = await admin.from("workout_logs").update({ pain_notes: "Synthetic draft guard positive control" }).eq("id", id).select("*").single();
+  expect(edited.error).toBeNull(); expect(edited.data.pain_notes).toBe("Synthetic draft guard positive control");
+  expect(edited.data.completed).toBe(false);
+  for (const change of [
+    { prescription_snapshot: { ...original.data.prescription_snapshot, version: 2 } },
+    { record_timezone: "UTC" }
+  ]) {
+    // Exact 55000 matters: without the snapshot guard CHECK 23514 is insufficient,
+    // and without the timezone guard this valid timezone change would succeed.
+    expect((await admin.from("workout_logs").update(change).eq("id", id)).error?.code).toBe("55000");
+    const after = await admin.from("workout_logs").select("*").eq("id", id).single();
+    expect(after.error).toBeNull(); expect(after.data).toEqual(edited.data);
+  }
+});
 it("round-trips distinct sets through real routes and renewed authentication", async () => {
   expect((await PUT(req("PUT", { id, expected_revision: 0, sets: [first,second] }))).status).toBe(200);
   await a.client.auth.signOut();
