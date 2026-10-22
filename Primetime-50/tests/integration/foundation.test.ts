@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
 import { stackConfig, testAccount } from "../local-stack";
 import { validProfile } from "../fixture";
 
@@ -87,18 +88,60 @@ describe("direct Supabase RLS and privileges", () => {
     expect(day.error).toBeNull();
     expect((await a.client.from("workout_logs").insert({ user_id: a.user.id, workout_day_id: day.data!.id })).error).not.toBeNull();
   });
-  it("enforces numeric workout bounds through direct database writes", async () => {
+  it("enforces managed workout numeric bounds through the supported owned RPC without partial writes", async () => {
+    const id = randomUUID();
+    const started = await a.client.rpc("start_workout_record", { payload: { id, mode: "personal", timezone: "UTC" } });
+    expect(started.error).toBeNull();
+    expect(started.data).toMatchObject({ id, revision: 0, completed: false });
+    const valid = { id: randomUUID(), exercise_key: randomUUID(), exercise_name: "Synthetic numeric fixture; no prescription", set_number: 1, reps: 8, weight: 10, rpe: 6 };
+    const saved = await a.client.rpc("save_workout_record", { payload: { id, expected_revision: 0, sets: [valid] } });
+    expect(saved.error).toBeNull(); expect(saved.data).toMatchObject({ id, revision: 1, completed: false });
+    const before = await a.client.from("exercise_set_logs").select("*").eq("workout_log_id", id).single();
+    expect(before.error).toBeNull(); expect(before.data).toMatchObject(valid);
+    for (const change of [{ set_number: 0 }, { set_number: 21 }, { reps: -1 }, { reps: 101 }, { weight: -1 }, { weight: "NaN" }, { weight: "Infinity" }, { rpe: 0 }, { rpe: 11 }]) {
+      // Valid first entry must be rolled back when the second entry fails SQL validation.
+      const invalid = { ...valid, id: randomUUID(), set_number: 2, ...change };
+      const result = await a.client.rpc("save_workout_record", { payload: { id, expected_revision: 1, sets: [{ ...valid, reps: 9 }, invalid] } });
+      expect(result.error?.code).toBe("22023");
+      const after = await a.client.from("exercise_set_logs").select("*").eq("workout_log_id", id).single();
+      expect(after.error).toBeNull(); expect(after.data).toEqual(before.data);
+      const log = await a.client.from("workout_logs").select("revision,completed,completed_at").eq("id", id).single();
+      expect(log.error).toBeNull(); expect(log.data).toEqual({ revision: 1, completed: false, completed_at: null });
+    }
+    // A valid direct insert must be denied by managed-parent RLS, not confused with CHECK failure.
+    const forgedId = randomUUID();
+    expect((await a.client.from("workout_logs").insert({ id: forgedId, user_id: a.user.id, record_mode: "personal", record_timezone: "UTC", prescription_snapshot: { source: "user_recorded", version: 1, prescription: null, weight_unit: "kg" } })).error?.code).toBe("42501");
+    const absent = await a.client.from("workout_logs").select("id").eq("id", forgedId);
+    expect(absent.error).toBeNull(); expect(absent.data).toEqual([]);
+    const direct = { user_id: a.user.id, workout_log_id: id, set_number: 2, reps: 8, weight: 10, rpe: 6 };
+    expect((await a.client.from("exercise_set_logs").insert(direct)).error?.code).toBe("42501");
+    for (const action of [
+      a.client.from("exercise_set_logs").update({ reps: 99 }).eq("id", valid.id).select(),
+      a.client.from("exercise_set_logs").delete().eq("id", valid.id).select(),
+      a.client.from("workout_logs").update({ completed: true }).eq("id", id).select(),
+      a.client.from("workout_logs").delete().eq("id", id).select()
+    ]) {
+      const denied = await action;
+      expect(denied.error).toBeNull(); expect(denied.data).toEqual([]);
+    }
+    const after = await a.client.from("exercise_set_logs").select("*").eq("workout_log_id", id).single();
+    expect(after.error).toBeNull(); expect(after.data).toEqual(before.data);
+    const log = await a.client.from("workout_logs").select("revision,completed,completed_at").eq("id", id).single();
+    expect(log.error).toBeNull(); expect(log.data).toEqual({ revision: 1, completed: false, completed_at: null });
+  });
+  it("retains exact legacy SQL CHECK numeric coverage separately from managed RLS", async () => {
+    // Preserve the working legacy owner-write contract (NULL record_mode).
+    // This positive control grants no direct-write permission to managed personal records.
     const log = await a.client.from("workout_logs").insert({ user_id: a.user.id }).select("id").single();
     expect(log.error).toBeNull();
-    // A valid sibling proves these fixtures reach the intended constraints.
     const valid = { user_id: a.user.id, workout_log_id: log.data!.id, set_number: 1, reps: 8, weight: 10, rpe: 6 };
     expect((await a.client.from("exercise_set_logs").insert(valid)).error).toBeNull();
-    const before = await a.client.from("exercise_set_logs").select("*");
-    expect(before.error).toBeNull();
+    const before = await a.client.from("exercise_set_logs").select("*").eq("workout_log_id", log.data!.id);
+    expect(before.error).toBeNull(); expect(before.data).toHaveLength(1);
     for (const change of [{ set_number: 0 }, { set_number: 21 }, { reps: -1 }, { reps: 101 }, { weight: -1 }, { weight: "NaN" }, { weight: "Infinity" }, { rpe: 0 }, { rpe: 11 }]) {
       expect((await a.client.from("exercise_set_logs").insert({ ...valid, ...change })).error?.code).toBe("23514");
     }
-    const after = await a.client.from("exercise_set_logs").select("*");
+    const after = await a.client.from("exercise_set_logs").select("*").eq("workout_log_id", log.data!.id);
     expect(after.error).toBeNull(); expect(after.data).toEqual(before.data);
   });
   it("enforces both sides of profile numeric bounds on direct authenticated writes", async () => {
