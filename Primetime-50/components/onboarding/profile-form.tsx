@@ -35,7 +35,9 @@ export function ProfileForm({ profile, draft = null, onboarding = false }: { pro
     const timer = setTimeout(() => {
       setDraftStatus("Saving draft…");
       fetch("/api/profile/draft", { method: "PUT", headers: { "Content-Type": "application/json" }, body }).then(response => {
-        if (latestDraft.current === body) setDraftStatus(response.ok ? "Draft saved to your account." : "Draft could not be saved. Keep this page open and try again.");
+        if (latestDraft.current === body) setDraftStatus(response.ok ? "Draft saved to your account." : response.status === 409
+          ? "Your profile is already complete. This draft was not saved. Use Settings to make changes."
+          : "Draft could not be saved. Keep this page open and try again.");
       }).catch(() => { if (latestDraft.current === body) setDraftStatus("Draft could not be saved. Keep this page open and try again."); });
     }, 800);
     return () => clearTimeout(timer);

@@ -14,5 +14,6 @@ export async function saveDraft(input: unknown) {
   const { supabase, user } = await requireUser();
   const draft = draftSchema.parse(input);
   const { error } = await supabase.from("onboarding_drafts").upsert({ user_id: user.id, draft_json: draft });
+  if (error?.code === "55000") throw new AppError(409, "Your profile is already complete. This draft was not saved. Use Settings to make changes.");
   if (error) throw new AppError(503, "Your draft was not saved. Please try again.");
 }
