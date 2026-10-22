@@ -31,7 +31,7 @@ Inter is used if installed locally; otherwise the existing system sans-serif sta
 
 ## SQL-only migration and ownership qualification
 
-When the container stack is unavailable, `pnpm test:sql` independently exercises the **real ordered migrations, profile RPC, constraints and RLS** using an installed native PostgreSQL toolchain. This is supplementary SQL evidence, not a mocked successful Supabase integration run.
+Where native SQL socket execution is authorised, `pnpm test:sql` exercises the **real ordered migrations, profile RPC, constraints and RLS** using an installed native PostgreSQL toolchain. This is supplementary SQL evidence, not a mocked successful Supabase integration run.
 
 ```sh
 cd Primetime-50
@@ -42,9 +42,30 @@ POSTGRES_BIN=/absolute/path/to/postgresql/bin pnpm test:sql
 
 The runner creates a fresh task-owned cluster under `TMPDIR`, or `~/.cache/primefit-sql` when unset. Keep the scratch path short enough for PostgreSQL Unix sockets. It has **no TCP listener**, a private socket directory, no inherited `PG*` connection settings and no connection to existing databases. It stops its own cluster on success/failure, removes successful disposable fixtures and preserves failed fixtures/logs for diagnosis. An installation with bundled shared libraries may also require its normal `LD_LIBRARY_PATH`; this is an invocation-only setting, not a global library change.
 
-The test-only `auth.users`/`auth.uid()` interface and restricted roles supply synthetic SQL identities. The production migrations and their functions are executed unchanged; no Auth or REST server is emulated. Named assertions cover bootstrap metadata/role denial, profile/equipment save and rollback, private drafts, distinct sets, bounded values, anonymous/cross-user denial, forged parent IDs, preservation and fresh-SQL-connection reads. Receipt counts are checked against the declared assertion inventory. This harness cannot prove real login/reauthentication, email delivery, generated Supabase types, REST/API wiring, browser/mobile behaviour, reviewed exercise content or workout completion idempotency. Keep the existing integration/security/browser gates unchanged.
+The test-only `auth.users`/`auth.uid()` interface and restricted roles supply synthetic SQL identities. The production migrations and their functions are executed unchanged; no Auth or REST server is emulated. The current inventory declares **68 named assertions** (65 in `tests/sql/foundation.sql`, plus three fresh-connection/transport checks in `scripts/test-sql.mjs`). The runner derives the exact names from both SQL inputs, rejects duplicate names and checks the complete returned inventory. It applies exactly seven timestamp-ordered migrations, printing each name and SHA256:
 
-Qualification on 22/10/2026 used native PostgreSQL **18.1**: all four current migrations and 45 SQL assertions passed. The Supabase configuration still specifies PostgreSQL **15**; this additional result is not a PostgreSQL-15 or full-Supabase qualification. The database type-generation and authenticated integration gates remain unresolved while the isolated Supabase route is blocked. No production schema/configuration was modified.
+1. `20261006000100_baseline.sql`
+2. `20261006000200_foundation.sql`
+3. `20261006000300_parent_ownership.sql`
+4. `20261006000400_onboarding_drafts.sql`
+5. `20261022000100_workout_records.sql`
+6. `20261022051500_completed_draft_boundary.sql`
+7. `20261022090000_reviewed_workout_catalogue.sql`
+
+Assertions cover bootstrap metadata/role denial; selected profile values and a positive exact saved-health-row control; completion clearing drafts and rejecting recreation with `55000`; late invalid-equipment `23514` rollback of the completed profile/health/equipment; and a separate incomplete synthetic actor retaining its exact original profile, draft and equipment after the same late failure. Profile and draft snapshots include all row fields, including timestamps.
+
+Direct legacy workout fixtures have `record_mode IS NULL`: their distinct sets, bounds and parent checks are **not managed-record proof**. The foreign-log insert is denied by current set-write RLS with `42501` before FK evaluation. A B-owned legacy log satisfies RLS so a foreign exercise still reaches `set_exercise_owner` and fails with exactly `23503`. A separately labelled trusted SQL control bypasses RLS solely to prove `set_log_owner` still rejects a cross-owner reference with `23503`; it does not prove ordinary authenticated access.
+
+A bounded managed personal-record control starts through `start_workout_record`, saves two distinct sets through `save_workout_record`, reads saved values, rejects owner direct writes and foreign RPC writes, and checks anonymous RPC grants. These are synthetic user-recorded facts without any approved prescription. The broader unchanged main gates remain explicit parent/operator commands:
+
+```sh
+node scripts/test-draft-sql.mjs
+node scripts/test-reviewed-sql.mjs
+```
+
+Run each only on an authorised native SQL route with task-owned `TMPDIR` and a compatible toolchain. Reused controller PG18.1 evidence for those unchanged gates records 18 sequential draft assertions plus five concurrent orders, and 59 reviewed-catalogue assertions plus seven concurrent orders. Those receipts are historical source-bound evidence, not a run of this repaired candidate or real exercise approval. This harness cannot prove real login/reauthentication, email delivery, generated Supabase types, REST/API wiring, browser/mobile behaviour, reviewed exercise content or workout completion idempotency. Keep the existing integration/security/browser gates unchanged.
+
+Historical original-base qualification on 22/10/2026 used native PostgreSQL **18.1**: four then-current migrations and 45 assertions passed. The parent later reproduced the unchanged fixture failing against six migrations at completed-account draft recreation (`55000`, correct product rejection). That immutable failure is the accepted fixture-defect reproduction, not product-code TDD. This repair authors 68 assertions against the current seven-migration source; **actual SQL execution of this candidate is NOT RUN by the worker** and must be performed by the parent. No SQL GREEN is claimed from static checks. The Supabase configuration still specifies PostgreSQL **15**; this additional result is not a PostgreSQL-15 or full-Supabase qualification. Configured PG15, Auth, REST, SSR/session, generated types and connected browser acceptance remain NOT RUN for this worker candidate. Genuinely blocked environment/fact work belongs to Austin in #16, then connected execution in #17; contributor tooling, repeatable source gates and fixture defects remain contributor-owned. Existing rootful/alternate-Docker refusals must not be retried or bypassed through flags, SDKs, HTTP, permissions or provider changes. No production schema/configuration was modified.
 
 ## Local database and authentication
 
@@ -65,7 +86,7 @@ For the CLI used here, optional telemetry can be disabled with `pnpm exec supaba
 
 Auth confirmation is enabled in local configuration and passwords must have at least 12 characters. Confirmation email is delivered to the local inbox, not a production mailbox. The app handles provider code/one-use token confirmation, password login, magic links, cookie session restoration and logout. Provider rate limits still apply; configure email delivery/rate limits for a real deployment separately.
 
-All four migrations are authoritative, in timestamp order. The first is the legacy baseline; the next three add the foundation, parent-ownership checks and private drafts. Existing onboarding rows remain preserved as legacy records; new writes use canonical profiles/health/equipment. Users with only legacy onboarding rows must review and save the new profile. Existing invalid data or cross-tenant references cause migration failure and must be inspected rather than removed automatically.
+All seven migrations listed above are authoritative, in timestamp order. The first is the legacy baseline; the next three add the foundation, parent-ownership checks and private drafts. The remaining three add managed workout records, the completed-draft boundary and the reviewed-catalogue contract. Catalogue fixtures do not confer real exercise or nutrition approval. Existing onboarding rows remain preserved as legacy records; new writes use canonical profiles/health/equipment. Users with only legacy onboarding rows must review and save the new profile. Existing invalid data or cross-tenant references cause migration failure and must be inspected rather than removed automatically.
 
 `pnpm db:reset` is **destructive to the isolated local database**; use only when you intentionally want to reset local development data. Normal stop/start preserves local volumes. Do not reset a user's existing database or run the baseline over an already-created schema. For an existing project, compare its schema and migration history first, adopt the baseline in migration metadata only after confirming it matches, then apply the additive migrations to a reviewed test copy. No remote migrations were applied in this task.
 

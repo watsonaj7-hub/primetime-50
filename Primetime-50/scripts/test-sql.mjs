@@ -36,28 +36,29 @@ try {
   // Only the documented Supabase SQL interface is modelled. No Auth or REST service is emulated.
   sql(readFileSync(join(app, "tests/sql/bootstrap.sql"), "utf8"));
   const migrations = readdirSync(join(app, "supabase/migrations")).filter(name => /^\d+_.+\.sql$/.test(name)).sort();
-  if (migrations.length === 0) throw new Error("No ordered migrations found.");
+  if (migrations.length !== 7) throw new Error("Expected exactly seven current candidate migrations.");
   for (const name of migrations) {
     const bytes = readFileSync(join(app, "supabase/migrations", name));
-    sql(bytes);
+    sql("begin;\n" + bytes.toString("utf8") + "\ncommit;\n");
     console.log(`APPLIED ${name} sha256=${createHash("sha256").update(bytes).digest("hex")}`);
   }
   const fixture = readFileSync(join(app, "tests/sql/foundation.sql"), "utf8");
   sql(fixture);
   // A fresh SQL connection reads the real committed profile/set values under A's restricted role.
-  sql(`set role authenticated;
+  const reopen = `set role authenticated;
     do $$ begin perform set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',false); end $$;
     select fixture.ok('fresh SQL connection reopens saved profile', (select display_name='SQL fixture A' and height_cm=175 from public.profiles));
-    select fixture.ok('fresh SQL connection reopens distinct sets', (select count(*)=2 and sum(reps)=15 from public.exercise_set_logs));
+    select fixture.ok('fresh SQL connection reopens distinct sets', (select count(*)=2 and sum(reps)=15 from public.exercise_set_logs where workout_log_id='00000000-0000-4000-8000-000000000014'));
     reset role;
     select fixture.ok('fixture has no TCP listener', current_setting('listen_addresses')='' and inet_server_addr() is null);
-  `);
+  `;
+  sql(reopen);
   const output = sql("select json_build_object('assertions', count(*), 'names', json_agg(name order by name)) from fixture.results;\n");
   const match = output.match(/\{[^\n]+\}/);
   if (!match) throw new Error("SQL assertion receipt missing.");
   const receipt = JSON.parse(match[0]);
-  const expected = [...fixture.matchAll(/fixture\.(?:ok|denied)\('([^']+)'/g)].map(match => match[1]);
-  if (receipt.assertions !== expected.length + 3 || expected.some(name => !receipt.names.includes(name))) throw new Error("SQL assertion inventory mismatch.");
+  const expected = [...(fixture + reopen).matchAll(/fixture\.(?:ok|denied)\('([^']+)'/g)].map(match => match[1]);
+  if (new Set(expected).size !== expected.length || receipt.assertions !== expected.length || expected.some(name => !receipt.names.includes(name))) throw new Error("SQL assertion inventory mismatch.");
   console.log(JSON.stringify(receipt));
   passed = true;
 } catch (error) {
