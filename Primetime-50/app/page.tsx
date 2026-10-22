@@ -1,31 +1,21 @@
 import Link from "next/link";
 import {
-  Activity,
   ArrowRight,
   Bot,
-  Dumbbell,
   HeartPulse,
   LineChart,
   ShieldCheck,
-  Utensils
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/metric-card";
+import { HistoryExperience } from "@/components/history/history-experience";
 import { ProgressChart } from "@/components/progress-chart";
 import { TodayWorkout } from "@/components/today-workout";
 import { HabitGrid } from "@/components/habit-grid";
 import { CoachPanel } from "@/components/coach-panel";
 import { NutritionPanel } from "@/components/nutrition-panel";
 import { ExerciseSpotlight } from "@/components/exercise-spotlight";
-
-const stats = [
-  { label: "Workout consistency", value: "86%", helper: "6 of 7 days", icon: Activity },
-  { label: "Strength trend", value: "+12%", helper: "Last 6 weeks", icon: Dumbbell },
-  { label: "Recovery score", value: "78", helper: "Ready for moderate load", icon: HeartPulse },
-  { label: "Protein adherence", value: "91%", helper: "Avg. 136g/day", icon: Utensils }
-];
 
 const safetyCards: { title: string; body: string; icon: LucideIcon }[] = [
   {
@@ -74,11 +64,7 @@ export default function Home() {
             </Button>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          {stats.map((stat) => (
-            <MetricCard key={stat.label} {...stat} />
-          ))}
-        </div>
+        <HistoryExperience compact />
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_0.85fr]">
