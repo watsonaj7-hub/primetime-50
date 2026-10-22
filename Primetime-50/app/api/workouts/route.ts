@@ -1,10 +1,12 @@
 import { requireUser } from "@/lib/auth/require-user";
 import { NextResponse } from "next/server";
-import { readWorkouts, saveWorkout, startWorkout } from "@/lib/services/workout";
+import { readWorkouts, readReviewedAvailability, saveWorkout, startWorkout } from "@/lib/services/workout";
 import { checkOrigin, errorResponse, readJson } from "@/lib/http/errors";
 const headers = { "Cache-Control": "no-store" };
 export async function GET(request: Request) {
-  try { return NextResponse.json({ workouts: await readWorkouts(new URL(request.url).searchParams.get("id")) }, { headers }); }
+  try {
+    if (new URL(request.url).searchParams.get("view") === "reviewed-availability") return NextResponse.json({ availability: await readReviewedAvailability() }, { headers });
+    return NextResponse.json({ workouts: await readWorkouts(new URL(request.url).searchParams.get("id")) }, { headers }); }
   catch (error) { return errorResponse(error); }
 }
 export async function POST(request: Request) {

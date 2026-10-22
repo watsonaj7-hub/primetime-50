@@ -76,7 +76,7 @@ it("refuses cross-origin writes before auth or storage", async () => {
 });
 it("reads with explicit authenticated owner and stable ordering, with no cache", async () => {
   const api = await routes(); expect(api).not.toBeNull();
-  const query = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), limit: vi.fn().mockResolvedValue({ data: [record], error: null }) };
+  const query = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), limit: vi.fn().mockResolvedValue({ data: [record], error: null }) };
   boundary.from.mockReturnValue(query);
   const response = await api!.GET(new Request(`http://localhost/api/workouts?id=${id}`));
   expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toBe("no-store");
