@@ -15,11 +15,12 @@ const admin = createClient(config.API_URL, config.SERVICE_ROLE_KEY, { auth: { pe
 let a: Awaited<ReturnType<typeof testAccount>>;
 let b: Awaited<ReturnType<typeof testAccount>>;
 let planB: string;
+let draftAccount: Awaited<ReturnType<typeof testAccount>>;
 beforeAll(async () => {
   a = await testAccount(config, admin); b = await testAccount(config, admin);
   context.current = { supabase: a.client, user: a.user };
 });
-afterAll(async () => { for (const account of [a,b]) if (account) await admin.auth.admin.deleteUser(account.user.id); });
+afterAll(async () => { for (const account of [a,b,draftAccount]) if (account) await admin.auth.admin.deleteUser(account.user.id); });
 
 describe("real database persistence and service boundary", () => {
   it("bootstraps an incomplete user profile without demo personal data", async () => {
@@ -89,13 +90,70 @@ describe("direct Supabase RLS and privileges", () => {
   it("enforces numeric workout bounds through direct database writes", async () => {
     const log = await a.client.from("workout_logs").insert({ user_id: a.user.id }).select("id").single();
     expect(log.error).toBeNull();
-    for (const change of [{ reps: 101 }, { weight: -1 }, { rpe: 11 }]) expect((await a.client.from("exercise_set_logs").insert({ user_id: a.user.id, workout_log_id: log.data!.id, set_number: 1, reps: 8, weight: 10, rpe: 6, ...change })).error).not.toBeNull();
+    // A valid sibling proves these fixtures reach the intended constraints.
+    const valid = { user_id: a.user.id, workout_log_id: log.data!.id, set_number: 1, reps: 8, weight: 10, rpe: 6 };
+    expect((await a.client.from("exercise_set_logs").insert(valid)).error).toBeNull();
+    const before = await a.client.from("exercise_set_logs").select("*");
+    expect(before.error).toBeNull();
+    for (const change of [{ set_number: 0 }, { set_number: 21 }, { reps: -1 }, { reps: 101 }, { weight: -1 }, { weight: "NaN" }, { weight: "Infinity" }, { rpe: 0 }, { rpe: 11 }]) {
+      expect((await a.client.from("exercise_set_logs").insert({ ...valid, ...change })).error?.code).toBe("23514");
+    }
+    const after = await a.client.from("exercise_set_logs").select("*");
+    expect(after.error).toBeNull(); expect(after.data).toEqual(before.data);
   });
-  it("keeps draft data private and removes it on profile completion", async () => {
-    await a.client.from("onboarding_drafts").upsert({ user_id: a.user.id, draft_json: { step: 2 } });
-    expect((await b.client.from("onboarding_drafts").select("*")).data).toEqual([]);
-    expect((await b.client.from("onboarding_drafts").insert({ user_id: a.user.id, draft_json: {} })).error).not.toBeNull();
-    await saveProfile(validProfile);
-    expect((await a.client.from("onboarding_drafts").select("*")).data).toEqual([]);
+  it("enforces both sides of profile numeric bounds on direct authenticated writes", async () => {
+    const before = await a.client.from("profiles").select("*").eq("user_id", a.user.id).single();
+    expect(before.error).toBeNull();
+    for (const change of [
+      { height_cm: 99 }, { height_cm: 251 }, { weight_kg: 24 }, { weight_kg: 351 },
+      { waist_cm: 29 }, { waist_cm: 251 }, { training_days_per_week: 0 },
+      { training_days_per_week: 8 }, { preferred_session_minutes: 9 }, { preferred_session_minutes: 121 }
+    ]) {
+      expect((await a.client.from("profiles").update(change).eq("user_id", a.user.id)).error?.code).toBe("23514");
+    }
+    const after = await a.client.from("profiles").select("*").eq("user_id", a.user.id).single();
+    expect(after.error).toBeNull(); expect(after.data).toEqual(before.data);
+  });
+  it("keeps a genuinely incomplete account's draft private and removes it on completion", async () => {
+    draftAccount = await testAccount(config, admin);
+    const owner = draftAccount.client;
+    const saved = await owner.from("onboarding_drafts").upsert({ user_id: draftAccount.user.id, draft_json: { step: 2 } });
+    expect(saved.error).toBeNull();
+    const own = await owner.from("onboarding_drafts").select("draft_json").single();
+    expect(own.error).toBeNull(); expect(own.data).toEqual({ draft_json: { step: 2 } });
+    const hidden = await b.client.from("onboarding_drafts").select("*").eq("user_id", draftAccount.user.id);
+    expect(hidden.error).toBeNull(); expect(hidden.data).toEqual([]);
+    const changed = await b.client.from("onboarding_drafts").update({ draft_json: {} }).eq("user_id", draftAccount.user.id).select();
+    expect(changed.error).toBeNull(); expect(changed.data).toEqual([]);
+    expect((await b.client.from("onboarding_drafts").insert({ user_id: draftAccount.user.id, draft_json: {} })).error?.code).toBe("42501");
+    const removed = await b.client.from("onboarding_drafts").delete().eq("user_id", draftAccount.user.id).select();
+    expect(removed.error).toBeNull(); expect(removed.data).toEqual([]);
+    expect((await owner.from("onboarding_drafts").select("draft_json").single()).data).toEqual(own.data);
+    expect((await owner.rpc("save_foundation_profile", { payload: validProfile })).error).toBeNull();
+    const cleared = await owner.from("onboarding_drafts").select("*");
+    expect(cleared.error).toBeNull(); expect(cleared.data).toEqual([]);
+    expect((await owner.from("onboarding_drafts").upsert({ user_id: draftAccount.user.id, draft_json: { step: 3 } })).error?.code).toBe("55000");
+  });
+  it("ignores user-editable Auth metadata when determining administrator authority", async () => {
+    expect((await a.client.auth.updateUser({ data: { role: "admin", user_id: b.user.id } })).error).toBeNull();
+    const authority = await a.client.rpc("is_admin");
+    expect(authority.error).toBeNull(); expect(authority.data).toBe(false);
+    const own = await a.client.from("profiles").select("role").eq("user_id", a.user.id).single();
+    expect(own.error).toBeNull(); expect(own.data).toEqual({ role: "user" });
+  });
+  it("protects equipment reads and mutations without changing the owner's values", async () => {
+    const before = await b.client.from("user_equipment").select("*");
+    expect(before.error).toBeNull(); expect(before.data!.length).toBeGreaterThan(0);
+    for (const action of [
+      a.client.from("user_equipment").select("*"),
+      a.client.from("user_equipment").update({ equipment_type: "chair" }).select(),
+      a.client.from("user_equipment").delete().select()
+    ]) {
+      const result = await action.eq("user_id", b.user.id);
+      expect(result.error).toBeNull(); expect(result.data).toEqual([]);
+    }
+    expect((await a.client.from("user_equipment").insert({ user_id: b.user.id, equipment_type: "chair" })).error?.code).toBe("42501");
+    const after = await b.client.from("user_equipment").select("*");
+    expect(after.error).toBeNull(); expect(after.data).toEqual(before.data);
   });
 });

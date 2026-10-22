@@ -60,3 +60,19 @@ it("redirects protected navigation when the provider throws", async () => {
   expect(response.status).toBe(307);
   expect(response.headers.get("location")).toBe("http://localhost:3000/login?next=%2Fonboarding");
 });
+
+it.each(["user", null])("ignores client metadata admin claims when stored role is %s", async role => {
+  getUser.mockResolvedValue({ data: { user: { id: "user-a", user_metadata: { role: "admin" }, app_metadata: { role: "admin" } } }, error: null });
+  const eq = vi.fn().mockReturnValue({ maybeSingle: async () => ({ data: role ? { role } : null, error: null }) });
+  const select = vi.fn().mockReturnValue({ eq });
+  boundary.factory.mockReturnValue({ auth: { getUser }, from: vi.fn().mockReturnValue({ select }) });
+  const response = await middleware(new NextRequest("http://localhost:3000/admin"));
+  expect(response.status).toBe(403);
+  expect(eq).toHaveBeenCalledWith("user_id", "user-a");
+  expect(select).toHaveBeenCalledWith("role");
+});
+it("admits an administrator only through the stored own profile role", async () => {
+  getUser.mockResolvedValue({ data: { user: { id: "admin-fixture", user_metadata: { role: "user" } } }, error: null });
+  boundary.factory.mockReturnValue({ auth: { getUser }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { role: "admin" }, error: null }) }) }) }) });
+  expect((await middleware(new NextRequest("http://localhost:3000/admin"))).status).toBe(200);
+});
