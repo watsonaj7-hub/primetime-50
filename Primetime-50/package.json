@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
+    "test:sql": "node scripts/test-sql.mjs",
     "test:e2e": "playwright test",
     "db:start": "supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor",
     "db:reset": "supabase db reset --local",
